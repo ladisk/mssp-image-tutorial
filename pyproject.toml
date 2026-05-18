@@ -1,0 +1,39 @@
+[project]
+name = "mssp-image-tutorial-repository"
+version = "0.1.0"
+description = "Accompanying code repository for the MSSP tutorial paper on high-speed camera based structural dynamics identification."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+keywords = [
+    "high-speed camera",
+    "structural dynamics",
+    "optical flow",
+    "digital image correlation",
+    "modal analysis",
+    "frequency response function",
+    "3D reconstruction",
+    "open-source",
+]
+authors = [
+    { name = "Domen Gorjup", email = "domen.gorjup@fs.uni-lj.si" },
+    { name = "Klemen Zaletelj" },
+    { name = "Janko Slavič", email = "janko.slavic@fs.uni-lj.si" },
+]
+dependencies = []
+
+[project.urls]
+# TODO: update once the paper is published
+# Paper-DOI = "https://doi.org/10.1016/TODO"
+# Journal = "https://www.sciencedirect.com/journal/mechanical-systems-and-signal-processing"
+Repository = "https://github.com/TODO/mssp-image-tutorial-repository"
+
+[tool.paper]
+# Bibliographic metadata — fill in once the paper is accepted/published
+title = "An Open-source Supported Guide to High-speed Camera Based Structural Dynamics Identification"
+journal = "Mechanical Systems and Signal Processing"
+doi = "TODO"
+volume = "TODO"
+issue = "TODO"
+pages = "TODO"
+year = "TODO"
