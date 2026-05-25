@@ -85,6 +85,67 @@ def calibrate_camera(image_files, pattern_size, block_size):
 
 # --- Extrinsic calibration --------------------------------------------------
 
+def detect_aruco_markers(image, aruco_dict=cv2.aruco.DICT_4X4_50):
+    """
+    Detect ArUco markers in a grayscale image and return their centre positions.
+
+    Each marker's centre is computed as the mean of its four detected corner
+    coordinates.  Only successfully detected markers are returned; the result
+    can be used directly as ``image_points`` input to ``calibrate_extrinsic``
+    after matching against a known 3-D layout.
+
+    Parameters
+    ----------
+    image : ndarray
+        Grayscale image in which to detect markers.
+    aruco_dict : int, optional
+        OpenCV ArUco dictionary identifier (e.g. ``cv2.aruco.DICT_4X4_50``).
+        Default is ``DICT_4X4_50``.
+
+    Returns
+    -------
+    centres : dict mapping int → ndarray of shape (2,)
+        Detected marker centres in pixels, keyed by marker ID.
+    """
+    det_params = cv2.aruco.DetectorParameters()
+    det_params.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX
+    detector = cv2.aruco.ArucoDetector(
+        cv2.aruco.getPredefinedDictionary(aruco_dict), det_params)
+    corners, ids, _ = detector.detectMarkers(image)
+
+    if ids is None:
+        return {}
+
+    # Centre = mean of the 4 sub-pixel refined corner coordinates
+    return {int(mid): c[0].mean(axis=0)
+            for mid, c in zip(ids.flatten(), corners)}
+
+
+def match_marker_points(markers_3d, markers_2d):
+    """
+    Build aligned object-point and image-point arrays from marker dicts.
+
+    Finds the marker IDs present in both inputs and returns correspondences
+    sorted by ID, ready to pass directly to ``calibrate_extrinsic``.
+
+    Parameters
+    ----------
+    markers_3d : dict mapping int → array-like of shape (3,)
+        Known 3-D world positions keyed by marker ID.
+    markers_2d : dict mapping int → array-like of shape (2,)
+        Detected image positions keyed by marker ID.
+
+    Returns
+    -------
+    object_points : ndarray of shape (N, 3)
+    image_points  : ndarray of shape (N, 2)
+    """
+    common_ids = sorted(set(markers_3d) & set(markers_2d))
+    object_points = np.array([markers_3d[i] for i in common_ids], dtype=np.float32)
+    image_points  = np.array([markers_2d[i]  for i in common_ids], dtype=np.float32)
+    return object_points, image_points
+
+
 def calibrate_extrinsic(object_points, image_points, K, calib):
     """
     Estimate the camera pose (extrinsic calibration) from known 3D–2D point
@@ -307,6 +368,11 @@ def plot_scene(marker_positions, camera_matrices, K=None, frustum_size=50,
     frustum pyramid is drawn in front of each camera, giving a visual check
     of the viewing direction and approximate field of view.
 
+    World coordinates are remapped for display so that the marker plate
+    (world Z = 0) appears as a vertical wall: world (X, Y, Z) is shown as
+    plot (X, Z, Y), placing world Z on the horizontal depth axis and world Y
+    as the vertical axis.
+
     Parameters
     ----------
     marker_positions : ndarray of shape (N, 3)
@@ -326,25 +392,43 @@ def plot_scene(marker_positions, camera_matrices, K=None, frustum_size=50,
     fig : matplotlib.figure.Figure
     ax  : matplotlib.axes.Axes (3-D)
     """
+    def _p(v):
+        # Remap world (X, Y, Z) → plot (Y, Z, X): worldY horizontal, worldX vertical, worldZ depth.
+        a = np.asarray(v)
+        return a[[1, 2, 0]] if a.ndim == 1 else a[:, [1, 2, 0]]
+
     fig_w = LATEX_DOUBLE_COLUMN_WIDTH_MM / 25.4
     fig = plt.figure(figsize=(fig_w, fig_w * 0.8))
     ax = fig.add_subplot(111, projection='3d')
 
     # Plot reference markers
-    ax.scatter(*marker_positions.T, s=20, color='C0', zorder=5, label='Markers')
+    mp = _p(marker_positions)
+    ax.scatter(*mp.T, s=20, color='C0', zorder=5, label='Markers')
     labels = marker_labels if marker_labels is not None else range(len(marker_positions))
     for pos, lbl in zip(marker_positions, labels):
-        ax.text(*pos, f' {lbl}', fontsize=7, color='C0')
+        ax.text(*_p(pos), f' {lbl}', fontsize=7, color='C0')
 
-    # Collect all plotted points to set equal axes later
-    all_points = list(marker_positions)
+    # Draw the plate outline: marker bounding box expanded 13 mm, at z=0
+    pad = 13.0
+    x_min, x_max = marker_positions[:, 0].min() - pad, marker_positions[:, 0].max() + pad
+    y_min, y_max = marker_positions[:, 1].min() - pad, marker_positions[:, 1].max() + pad
+    plate_corners = np.array([
+        [x_min, y_min, 0.], [x_max, y_min, 0.],
+        [x_max, y_max, 0.], [x_min, y_max, 0.], [x_min, y_min, 0.],
+    ])
+    pc = _p(plate_corners)
+    ax.plot(pc[:, 0], pc[:, 1], pc[:, 2], color='C0', lw=0.8, alpha=0.4, ls='--')
+
+    # Collect all plotted points (in plot coords) to set equal axes later
+    all_points = list(mp)
 
     for cam_label, P in camera_matrices.items():
         pos = camera_position(P)
-        all_points.append(pos)
+        pp = _p(pos)
+        all_points.append(pp)
 
-        ax.scatter(*pos, s=50, color='C1', marker='^', zorder=5)
-        ax.text(*pos, f'  {cam_label}', fontsize=8, color='C1')
+        ax.scatter(*pp, s=50, color='C1', marker='^', zorder=5)
+        ax.text(*pp, f'  {cam_label}', fontsize=8, color='C1')
 
         if K is not None:
             # Camera axes in world frame (columns of R^T)
@@ -361,12 +445,14 @@ def plot_scene(marker_positions, camera_matrices, K=None, frustum_size=50,
                 apex + s_x * half_w * cam_x + s_y * half_h * cam_y
                 for s_x, s_y in [(1, 1), (-1, 1), (-1, -1), (1, -1)]
             ]
-            # Lines from camera centre to each corner
+            # Lines from camera centre to each frustum corner
             for c in corners:
-                ax.plot(*zip(pos, c), color='C1', lw=0.8, alpha=0.5)
+                ax.plot(*np.array([_p(pos), _p(c)]).T, color='C1', lw=0.8, alpha=0.5)
+            
             # Close the base rectangle
             for i in range(4):
-                ax.plot(*zip(corners[i], corners[(i + 1) % 4]), color='C1', lw=0.8, alpha=0.5)
+                ax.plot(*np.array([_p(corners[i]), _p(corners[(i + 1) % 4])]).T,
+                        color='C1', lw=1.2, alpha=0.5)
 
     # Equal aspect ratio: expand each axis symmetrically around the scene midpoint
     all_points = np.array(all_points)
@@ -376,8 +462,18 @@ def plot_scene(marker_positions, camera_matrices, K=None, frustum_size=50,
     ax.set_ylim(mid[1] - half_range, mid[1] + half_range)
     ax.set_zlim(mid[2] - half_range, mid[2] + half_range)
 
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
-    ax.set_zlabel('Z')
+    ax.set_xlabel('Y [mm]')   # world Y on plot X (horizontal)
+    ax.set_ylabel('Z [mm]')   # world Z on plot Y (depth)
+    ax.set_zlabel('X [mm]')   # world X on plot Z (vertical)
+
+    ax.invert_zaxis()          # world X increases downward (marker 0 top, 4 bottom)
+    ax.view_init(elev=20, azim=0)
+
+    # Lighter grid lines
+    for axis in [ax.xaxis, ax.yaxis, ax.zaxis]:
+        axis._axinfo['grid']['linewidth'] = 0.3
+        axis._axinfo['grid']['color'] = '#bbbbbb'
+        axis.set_major_locator(plt.MaxNLocator(4))
+
     fig.tight_layout()
     return fig, ax
