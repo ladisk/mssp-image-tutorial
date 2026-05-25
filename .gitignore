@@ -230,3 +230,6 @@ __marimo__/
 .codeium/
 .mentat/
 .github/copilot*
+
+# Code outputs
+output/

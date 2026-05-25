@@ -3,5 +3,8 @@ numpy
 matplotlib
 ipykernel
 
+# Image processing libraries
+opencv-python
+
 # Specific libraries for this tutorial
 pyMRAW
