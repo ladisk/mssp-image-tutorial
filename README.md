@@ -9,14 +9,19 @@
 
 ## Getting started
 
-The main entry point is **`image_based_dynamics_tutorial.ipynb`** — a Jupyter notebook that walks through the
-complete measurement pipeline in the same order as the paper.  Start there.
+### Get the data
 
-Supporting implementations are in `methods/` (`calibration`, `triangulation`, `modal`,
-`visualization`, `utils`); the notebook imports from these as needed.
+The measurement videos (`.mraw`, ~280 MB each) are stored with [Git LFS](https://git-lfs.com).
+Install LFS for your platform ([instructions](https://git-lfs.com)), then clone:
 
-Dependencies: Python 3.11+, [pyIDI](https://github.com/ladisk/pyidi),
-[SDyPy](https://github.com/sdypy/sdypy). See `pyproject.toml` for the full list.
+```bash
+git lfs install   # once per machine
+git clone git@github.com:domengorjup/mssp-image-tutorial.git
+```
+
+If you already cloned without LFS, fetch the video files with `git lfs pull`.
+
+> **No git?**  Use the *Download ZIP* button on GitHub — it includes the real video files.
 
 ## Citation
 
