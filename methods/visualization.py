@@ -21,7 +21,7 @@ LATEX_DOUBLE_COLUMN_WIDTH_MM = 175.0
 DEFAULT_ASPECT_RATIO = 0.5
 
 # Default font size for publication-ready figures.
-DEFAULT_FONT_SIZE = 11.0
+DEFAULT_FONT_SIZE = 9.5
 
 # --- Matplotlib style setup -------------------------------------------------
 
@@ -46,10 +46,10 @@ def setup_matplotlib(
 
     mpl.rcParams.update(
         {
-            # Font handling (reliable fallback, Computer Modern-like output)
+            # Font: STIX Two — journal-quality serif, condensed and crisp, full math support
             "font.family": "serif",
-            "font.serif": ["CMU Serif", "Computer Modern Roman", "DejaVu Serif"],
-            "mathtext.fontset": "cm",
+            "font.serif": ["STIX Two Text", "DejaVu Serif"],
+            "mathtext.fontset": "stix",
             "text.usetex": False,
             # Consistent typography
             "font.size": font_size,
@@ -71,28 +71,24 @@ def setup_matplotlib(
             "axes.spines.top": False,
             "axes.spines.right": False,
             "axes.grid": False,
-            "axes.linewidth": 0.8,
+            "axes.linewidth": 0.6,
             "axes.formatter.use_mathtext": True,
-            "lines.linewidth": 1.2,
+            "lines.linewidth": 0.9,
             "lines.markersize": 4.0,
             "legend.frameon": False,
             "legend.handlelength": 1.5,
             "xtick.direction": "in",
             "ytick.direction": "in",
-            "xtick.major.size": 3.5,
-            "ytick.major.size": 3.5,
-            "xtick.major.width": 0.8,
-            "ytick.major.width": 0.8,
+            "xtick.major.size": 3.0,
+            "ytick.major.size": 3.0,
+            "xtick.major.width": 0.6,
+            "ytick.major.width": 0.6,
             "xtick.minor.visible": True,
             "ytick.minor.visible": True,
-            "xtick.minor.size": 2.0,
-            "ytick.minor.size": 2.0,
-            "xtick.minor.width": 0.6,
-            "ytick.minor.width": 0.6,
+            "xtick.minor.size": 1.8,
+            "ytick.minor.size": 1.8,
+            "xtick.minor.width": 0.5,
+            "ytick.minor.width": 0.5,
             "errorbar.capsize": 2.0,
         }
     )
-
-
-# Apply defaults on import; call setup_matplotlib(...) again to override.
-setup_matplotlib()

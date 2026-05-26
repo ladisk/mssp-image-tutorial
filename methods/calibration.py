@@ -9,6 +9,7 @@ displacement identification.
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from methods.utils import load_bw_image
 from methods.visualization import LATEX_DOUBLE_COLUMN_WIDTH_MM
 
@@ -368,10 +369,10 @@ def plot_scene(marker_positions, camera_matrices, K=None, frustum_size=50,
     frustum pyramid is drawn in front of each camera, giving a visual check
     of the viewing direction and approximate field of view.
 
-    World coordinates are remapped for display so that the marker plate
-    (world Z = 0) appears as a vertical wall: world (X, Y, Z) is shown as
-    plot (X, Z, Y), placing world Z on the horizontal depth axis and world Y
-    as the vertical axis.
+    Input coordinates follow image convention (axis 0 = row = Y, axis 1 =
+    col = X, axis 2 = Z).  These are remapped to plot (Z, X, Y) for display:
+    world Z on the horizontal axis, world X on the depth axis, and world Y on
+    the vertical axis (inverted, so Y increases downward).
 
     Parameters
     ----------
@@ -393,9 +394,10 @@ def plot_scene(marker_positions, camera_matrices, K=None, frustum_size=50,
     ax  : matplotlib.axes.Axes (3-D)
     """
     def _p(v):
-        # Remap world (X, Y, Z) → plot (Y, Z, X): worldY horizontal, worldX vertical, worldZ depth.
+        # Remap input (Y, X, Z) → plot (Z, X, Y): worldZ horizontal, worldX depth, worldY vertical.
         a = np.asarray(v)
-        return a[[1, 2, 0]] if a.ndim == 1 else a[:, [1, 2, 0]]
+        inds = [2, 1, 0]
+        return a[inds] if a.ndim == 1 else a[:, inds]
 
     fig_w = LATEX_DOUBLE_COLUMN_WIDTH_MM / 25.4
     fig = plt.figure(figsize=(fig_w, fig_w * 0.8))
@@ -403,32 +405,34 @@ def plot_scene(marker_positions, camera_matrices, K=None, frustum_size=50,
 
     # Plot reference markers
     mp = _p(marker_positions)
-    ax.scatter(*mp.T, s=20, color='C0', zorder=5, label='Markers')
+    ax.scatter(*mp.T, s=20, color='g', zorder=5, label='Markers')
     labels = marker_labels if marker_labels is not None else range(len(marker_positions))
     for pos, lbl in zip(marker_positions, labels):
-        ax.text(*_p(pos), f' {lbl}', fontsize=7, color='C0')
+        ax.text(*_p(pos), f' {lbl}', fontsize=7, color='g')
 
-    # Draw the plate outline: marker bounding box expanded 13 mm, at z=0
+    # Draw the plate: marker bounding box expanded 13 mm, filled at z=0
     pad = 13.0
     x_min, x_max = marker_positions[:, 0].min() - pad, marker_positions[:, 0].max() + pad
     y_min, y_max = marker_positions[:, 1].min() - pad, marker_positions[:, 1].max() + pad
     plate_corners = np.array([
         [x_min, y_min, 0.], [x_max, y_min, 0.],
-        [x_max, y_max, 0.], [x_min, y_max, 0.], [x_min, y_min, 0.],
+        [x_max, y_max, 0.], [x_min, y_max, 0.],
     ])
     pc = _p(plate_corners)
-    ax.plot(pc[:, 0], pc[:, 1], pc[:, 2], color='C0', lw=0.8, alpha=0.4, ls='--')
+    plate_patch = Poly3DCollection([pc], alpha=0.25, facecolor='gray', edgecolor='gray', linewidth=0.8)
+    ax.add_collection3d(plate_patch)
 
     # Collect all plotted points (in plot coords) to set equal axes later
     all_points = list(mp)
 
-    for cam_label, P in camera_matrices.items():
+    for i, (cam_label, P) in enumerate(camera_matrices.items()):
         pos = camera_position(P)
         pp = _p(pos)
         all_points.append(pp)
 
-        ax.scatter(*pp, s=50, color='C1', marker='^', zorder=5)
-        ax.text(*pp, f'  {cam_label}', fontsize=8, color='C1')
+        ax.scatter(*pp, s=50, color='k', marker='^', zorder=5,
+                   label='Cameras' if i == 0 else None)
+        ax.text(*pp, f'  {cam_label}', fontsize=8, color='k')
 
         if K is not None:
             # Camera axes in world frame (columns of R^T)
@@ -447,12 +451,12 @@ def plot_scene(marker_positions, camera_matrices, K=None, frustum_size=50,
             ]
             # Lines from camera centre to each frustum corner
             for c in corners:
-                ax.plot(*np.array([_p(pos), _p(c)]).T, color='C1', lw=0.8, alpha=0.5)
+                ax.plot(*np.array([_p(pos), _p(c)]).T, color='k', lw=0.8, alpha=0.5)
             
             # Close the base rectangle
             for i in range(4):
                 ax.plot(*np.array([_p(corners[i]), _p(corners[(i + 1) % 4])]).T,
-                        color='C1', lw=1.2, alpha=0.5)
+                        color='k', lw=1.2, alpha=0.5)
 
     # Equal aspect ratio: expand each axis symmetrically around the scene midpoint
     all_points = np.array(all_points)
@@ -462,12 +466,19 @@ def plot_scene(marker_positions, camera_matrices, K=None, frustum_size=50,
     ax.set_ylim(mid[1] - half_range, mid[1] + half_range)
     ax.set_zlim(mid[2] - half_range, mid[2] + half_range)
 
-    ax.set_xlabel('Y [mm]')   # world Y on plot X (horizontal)
-    ax.set_ylabel('Z [mm]')   # world Z on plot Y (depth)
-    ax.set_zlabel('X [mm]')   # world X on plot Z (vertical)
+    ax.set_xlabel('Z [mm]')   # world Z on plot X (depth)
+    ax.set_ylabel('X [mm]')   # world X on plot Y (horizontal)
+    ax.set_zlabel('Y [mm]')   # world Y on plot Z (vertical)
 
     ax.invert_zaxis()          # world X increases downward (marker 0 top, 4 bottom)
-    ax.view_init(elev=20, azim=0)
+    ax.view_init(elev=7, azim=20)
+
+    # Legend — Poly3DCollection needs a proxy artist to appear
+    from matplotlib.patches import Patch
+    proxy_plate = Patch(facecolor='gray', edgecolor='gray', alpha=0.25, label='Plate')
+    handles, leg_labels = ax.get_legend_handles_labels()
+    ax.legend(handles=[proxy_plate] + handles, labels=['Plate'] + leg_labels,
+              fontsize=9, bbox_to_anchor=(0.9, 0.77))
 
     # Lighter grid lines
     for axis in [ax.xaxis, ax.yaxis, ax.zaxis]:
