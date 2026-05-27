@@ -482,9 +482,60 @@ def plot_scene(marker_positions, camera_matrices, K=None, frustum_size=50,
 
     # Lighter grid lines
     for axis in [ax.xaxis, ax.yaxis, ax.zaxis]:
-        axis._axinfo['grid']['linewidth'] = 0.3
+        axis._axinfo['grid']['linewidth'] = 0.25
         axis._axinfo['grid']['color'] = '#bbbbbb'
         axis.set_major_locator(plt.MaxNLocator(4))
 
     fig.tight_layout()
+    return fig, ax
+
+
+def plot_speckle_image(speckle_image, dpi=96, markers_3d=None, reference_location=(0, 0)):
+    """
+    Plot the generated speckle image with the coordinate frame of reference 
+    and marker positions overlaid.
+
+    Parameters
+    ----------
+    speckle_image : ndarray
+        Grayscale image of the speckled surface.
+    dpi : int, optional
+        Dots per inch for figure size calculation (default 96).
+    markers_3d : dict mapping int → array-like of shape (3,)
+        Known 3-D world positions of reference markers keyed by marker ID.
+        The 3D coordinates 0 and 1 are assumed to correspond to the horizontal
+        and vertical directions in the image, and assumed to be in millimeters.
+    reference_location : tuple of int, optional
+        Pixel coordinates (x, y) of the origin of the world coordinate frame on
+        the speckle image (default (0, 0)).  The x-axis is drawn to the right
+        and the y-axis is drawn downward from this point. The z-axis is drawn
+        facing towards the viewer.
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+    ax  : matplotlib.axes.Axes
+    """
+
+    fig, ax = plt.subplots()
+    ax.imshow(speckle_image, cmap='gray', vmin=0, vmax=255)
+    ax.set_axis_off()
+    
+    # Plot the coordinate frame of reference (upper left corner of the plate. z axis pointing towards the viewer)
+    ax.arrow(reference_location[0], reference_location[1], 150, 0, head_width=20, head_length=50, fc='g', ec='g') # x-axis
+    ax.arrow(reference_location[0], reference_location[1], 0, 150, head_width=20, head_length=50, fc='r', ec='r') # y-axis
+    ax.scatter(reference_location[0], reference_location[1], s=30, marker='o', color='b')
+    ax.text(reference_location[0] + 75, reference_location[1] - 15, 'x', color='g', fontsize=12)
+    ax.text(reference_location[0] - 35, reference_location[1] + 75, 'y', color='r', fontsize=12)
+    ax.text(reference_location[0] - 35, reference_location[1] - 15, 'z', color='b', fontsize=12)
+
+    if markers_3d is not None:
+        # Plot the marker positions, converting from mm to pixels using the speckle image DPI
+        for marker_id, marker_position_mm in markers_3d.items():
+            marker_x = marker_position_mm[1] / 25.4 * dpi # convert from mm to pixels
+            marker_y = marker_position_mm[0] / 25.4 * dpi # convert from mm to pixels
+            ax.scatter(marker_x, marker_y, s=60, marker='s', label=f'ID {marker_id}')
+        ax.legend(loc='upper right', bbox_to_anchor=(1.2, 1.0))
+  
+    plt.tight_layout()
     return fig, ax
