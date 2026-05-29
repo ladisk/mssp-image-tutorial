@@ -1,5 +1,6 @@
 # General Python libraries
 numpy
+h5py
 matplotlib
 ipykernel
 ipywidgets

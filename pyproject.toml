@@ -20,7 +20,9 @@ authors = [
     { name = "Klemen Zaletelj" },
     { name = "Janko Slavič", email = "janko.slavic@fs.uni-lj.si" },
 ]
-dependencies = []
+dependencies = [
+    "h5py>=3.16.0",
+]
 
 [project.urls]
 # TODO: update once the paper is published

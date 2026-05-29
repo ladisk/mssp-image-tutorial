@@ -4,10 +4,9 @@ Experimental modal analysis using image-based measurements (paper Section 5).
 Wraps sdypy-EMA for modal parameter identification and provides FRF estimation
 and mode shape validation utilities.
 """
-import pickle
-import warnings
 import numpy as np
 import matplotlib.pyplot as plt
+from methods.utils import load_hdf5
 
 
 # --- FRF estimation ---------------------------------------------------------
@@ -25,10 +24,10 @@ def compute_frf(sig_files, idi_files, n_freq, view='view 0'):
     Parameters
     ----------
     sig_files : list of str
-        Measured-signal pickle files (``InputTask`` format: channel 0 = force,
+        Measured-signal HDF5 files (``InputTask`` format: channel 0 = force,
         channel 1 = accelerometer).
     idi_files : list of str
-        IDI displacement pickle files; each file must contain a dict keyed by
+        IDI displacement HDF5 files; each file must contain a dict keyed by
         view label.
     n_freq : int
         Number of positive-frequency bins to retain (clips force/acc spectra to
@@ -49,12 +48,8 @@ def compute_frf(sig_files, idi_files, n_freq, view='view 0'):
     Sff_list, Sfd_list, Sdd_list, Sdf_list, Sfa_list = [], [], [], [], []
 
     for sig_path, idi_path in zip(sig_files, idi_files):
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore')
-            with open(sig_path, 'rb') as f:
-                sig_data = np.array(pickle.load(f)['InputTask']['data'])
-            with open(idi_path, 'rb') as f:
-                disp = pickle.load(f)[view]
+        sig_data = load_hdf5(sig_path)['InputTask']['data']
+        disp = load_hdf5(idi_path)[view]
 
         force = sig_data[:, 0]
         acc   = sig_data[:, 1]
