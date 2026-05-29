@@ -8,7 +8,7 @@ from scipy.linalg import svd
 
 # --- Core triangulation method ----------------------------------------------
 
-def triangulate_multiview(x, P, K):
+def triangulate_dlt(x, P, K):
     """
     Triangulate a 3-D point from N ≥ 2 camera views using homogeneous DLT
     (Hartley & Zisserman §12.2).
@@ -84,5 +84,5 @@ def triangulate_points(x_per_view, P, K):
     points_3d : ndarray of shape (M, 3)
         Triangulated 3-D coordinates in world units.
     """
-    return np.array([triangulate_multiview(x_per_view[:, i, ::-1], P, K)
+    return np.array([triangulate_dlt(x_per_view[:, i, ::-1], P, K)
                      for i in range(x_per_view.shape[1])])
