@@ -3,6 +3,8 @@ numpy
 matplotlib
 ipykernel
 ipywidgets
+pyqt6
+pyqtgraph
 
 # Image processing libraries
 opencv-python
@@ -10,4 +12,5 @@ opencv-python
 # Specific libraries for this tutorial
 pyMRAW
 pyidi
+napari
 sdypy

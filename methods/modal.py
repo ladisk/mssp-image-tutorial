@@ -85,7 +85,7 @@ def compute_frf(sig_files, idi_files, n_freq, view='view 0'):
 
 # --- Visualisation ----------------------------------------------------------
 
-def plot_mode_shape(mode_shape, grid_coords, title=None, ax=None, **scatter_kw):
+def plot_mode_shape(mode_shape, grid_coords, title=None, ax=None, cmap=None, **scatter_kw):
     """
     Scatter plot of a mode shape amplitude on the 2-D measurement grid.
 
@@ -101,6 +101,8 @@ def plot_mode_shape(mode_shape, grid_coords, title=None, ax=None, **scatter_kw):
         Axes title.
     ax : matplotlib Axes, optional
         Axes to plot into; a new figure is created if not given.
+    cmap : str, optional
+        Colourmap passed to ``ax.scatter``; defaults to ``'viridis'``.
     **scatter_kw
         Passed to ``ax.scatter``.
 
@@ -114,7 +116,7 @@ def plot_mode_shape(mode_shape, grid_coords, title=None, ax=None, **scatter_kw):
         _, ax = plt.subplots()
     amplitude = (np.linalg.norm(np.abs(mode_shape), axis=1)
                  if mode_shape.ndim == 2 else np.abs(mode_shape))
-    scatter_kw.setdefault('cmap', 'viridis')
+    scatter_kw.setdefault('cmap', cmap or 'viridis')
     scatter_kw.setdefault('s', 40)
     sc = ax.scatter(grid_coords[:, 1], grid_coords[:, 0],
                     c=amplitude, **scatter_kw)
@@ -127,7 +129,7 @@ def plot_mode_shape(mode_shape, grid_coords, title=None, ax=None, **scatter_kw):
     return ax, sc
 
 
-def plot_mac(mac, ax=None):
+def plot_mac(mac, ax=None, cmap=None):
     """
     Colour-matrix plot of a MAC matrix with annotated values.
 
@@ -135,6 +137,8 @@ def plot_mac(mac, ax=None):
     ----------
     mac : ndarray of shape (n_modes, n_modes)
     ax : matplotlib Axes, optional
+    cmap : str, optional
+        Colourmap; defaults to ``'viridis'``.
 
     Returns
     -------
@@ -142,7 +146,7 @@ def plot_mac(mac, ax=None):
     """
     if ax is None:
         _, ax = plt.subplots()
-    im = ax.imshow(mac, vmin=0, vmax=1, cmap='viridis')
+    im = ax.imshow(mac, vmin=0, vmax=1, cmap=cmap or 'viridis')
     plt.colorbar(im, ax=ax, label='MAC')
     ax.set_xlabel('Mode')
     ax.set_ylabel('Mode')

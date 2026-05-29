@@ -86,3 +86,46 @@ def triangulate_points(x_per_view, P, K):
     """
     return np.array([triangulate_dlt(x_per_view[:, i, ::-1], P, K)
                      for i in range(x_per_view.shape[1])])
+
+
+def triangulate_ods(D_views, analysis_points, P, K, ref_3d, freq_indices):
+    """
+    Frequency-domain triangulation of Operating Deflection Shapes.
+
+    For each requested frequency bin, complex displacement spectra are added to
+    the reference pixel coordinates and the resulting complex image points are
+    triangulated via DLT.  Subtracting the static reference gives complex 3-D
+    ODS vectors; ``Re(ods * exp(j*phi))`` as phi varies over [0, 2π] traces one
+    vibration period.
+
+    Parameters
+    ----------
+    D_views : ndarray of shape (n_views, n_pts, n_freq, 2)
+        Complex displacement spectra [v, u] for each view.
+    analysis_points : ndarray of shape (n_views, n_pts, 2)
+        Reference pixel positions [v, u] for each view.
+    P : array-like of shape (n_views, 3, 4)
+        Extrinsic projection matrices.
+    K : ndarray of shape (3, 3)
+        Camera intrinsic matrix.
+    ref_3d : ndarray of shape (n_pts, 3)
+        Triangulated 3-D reference positions.
+    freq_indices : array-like of int
+        Frequency bin indices to triangulate at.
+
+    Returns
+    -------
+    ods_3d : ndarray of shape (n_pts, 3, n_freqs)
+        Complex 3-D ODS at each requested frequency.
+    """
+    freq_indices = np.asarray(freq_indices)
+    n_pts = D_views.shape[1]
+    ods_3d = np.zeros((n_pts, 3, len(freq_indices)), dtype=complex)
+
+    for fi, k in enumerate(freq_indices):
+        # complex image coords = static reference + displacement at this frequency bin
+        x_complex = analysis_points + D_views[:, :, k, :]  # (n_views, n_pts, 2)
+        pts_3d = triangulate_points(x_complex, P, K)        # (n_pts, 3) complex
+        ods_3d[:, :, fi] = pts_3d - ref_3d
+
+    return ods_3d
