@@ -265,12 +265,12 @@ def print_calibration_summary(K, calib, sensor_width_mm=None, sensor_width_px=No
     print("Intrinsic parameters")
     if sensor_width_mm is not None and sensor_width_px is not None:
         pixel_pitch = sensor_width_mm / sensor_width_px
-        print(f"  Focal length : fx = {fx:.2f} px  ({fx * pixel_pitch:.3f} mm),  "
+        print(f"\tFocal length : fx = {fx:.2f} px  ({fx * pixel_pitch:.3f} mm),  "
               f"fy = {fy:.2f} px  ({fy * pixel_pitch:.3f} mm)")
     else:
-        print(f"  Focal length : fx = {fx:.2f} px,  fy = {fy:.2f} px")
-    print(f"  Principal pt : cx = {cx:.2f} px,  cy = {cy:.2f} px")
-    print(f"  Skew         : s  = {K[0, 1]:.5f}")
+        print(f"\tFocal length : fx = {fx:.2f} px,  fy = {fy:.2f} px")
+    print(f"\tPrincipal pt : cx = {cx:.2f} px,  cy = {cy:.2f} px")
+    print(f"\tSkew         : s  = {K[0, 1]:.5f}")
 
     print(f"Reprojection error  mean = {errors.mean():.4f} px,  max = {errors.max():.4f} px")
 
@@ -292,7 +292,7 @@ def print_calibration_summary(K, calib, sensor_width_mm=None, sensor_width_px=No
     return fig
 
 
-def plot_calibration_images(K, calib, n_images=5, show_axes=True):
+def plot_calibration_images(K, calib, n_images=5, show_axes=True, show_errors=False):
     """
     Plot calibration images with detected checkerboard corners overlaid.
 
@@ -311,6 +311,8 @@ def plot_calibration_images(K, calib, n_images=5, show_axes=True):
         Number of images to show (default 5).
     show_axes : bool, optional
         Draw the board coordinate axes overlay (default ``True``).
+    show_errors : bool, optional
+        Display reprojection errors on the images (default ``False``).
 
     Returns
     -------
@@ -320,6 +322,7 @@ def plot_calibration_images(K, calib, n_images=5, show_axes=True):
     files = calib['valid_files'][:n_images]
     corners_list = calib['image_points'][:n_images]
     n = len(files)
+    errors = calib['perViewErrors'].flatten()[:n_images]
 
     if show_axes:
         axis_len = calib['block_size'] * 2.5
@@ -341,7 +344,7 @@ def plot_calibration_images(K, calib, n_images=5, show_axes=True):
         ax.set_axis_off()
 
         pts = corners[:, 0, :]
-        ax.scatter(pts[:, 0], pts[:, 1], s=3, c='cyan', linewidths=0, zorder=3)
+        ax.scatter(pts[:, 0], pts[:, 1], s=7, c='cyan', marker='s', linewidths=0, zorder=3)
 
         if show_axes:
             proj, _ = cv2.projectPoints(axis_pts, calib['rvecs'][i], calib['tvecs'][i],
@@ -354,6 +357,10 @@ def plot_calibration_images(K, calib, n_images=5, show_axes=True):
                     arrowprops=dict(arrowstyle='->', color=color,
                                     lw=1.5, mutation_scale=10),
                     zorder=4)
+                
+        if show_errors:
+            ax.text(5, 50, f'$\\bar{{\epsilon}}$: {errors[i]:.2f} px', color='cyan', fontsize=9,
+                    bbox=dict(facecolor='black', alpha=0.5, pad=1), zorder=5)
 
     fig.tight_layout(pad=0.1, w_pad=0.2)
     return fig, axes

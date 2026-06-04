@@ -17,14 +17,14 @@ return matplotlib Figure/Axes objects so the caller retains full control.
 # --- Layout constants -------------------------------------------------------
 
 # Column widths commonly used in LaTeX documents (mm).
-LATEX_SINGLE_COLUMN_WIDTH_MM = 85.0
+LATEX_SINGLE_COLUMN_WIDTH_MM = 80.0
 LATEX_DOUBLE_COLUMN_WIDTH_MM = 175.0
 
 # Sensible default height/width ratio for scientific plots.
 DEFAULT_ASPECT_RATIO = 0.5
 
 # Default font size for publication-ready figures.
-DEFAULT_FONT_SIZE = 9.5
+DEFAULT_FONT_SIZE = 12.0
 
 # Default colourmap used by all plotting functions; override via setup_matplotlib.
 DEFAULT_CMAP = 'viridis'
