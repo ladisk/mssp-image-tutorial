@@ -542,7 +542,7 @@ def plot_speckle_image(speckle_image, dpi=96, markers_3d=None, reference_locatio
             marker_x = marker_position_mm[1] / 25.4 * dpi # convert from mm to pixels
             marker_y = marker_position_mm[0] / 25.4 * dpi # convert from mm to pixels
             ax.scatter(marker_x, marker_y, s=60, marker='s', label=f'ID {marker_id}')
-        ax.legend(loc='upper right', bbox_to_anchor=(1.2, 1.0))
+        ax.legend(loc='upper right', bbox_to_anchor=(1.25, 1.0))
   
     plt.tight_layout()
     return fig, ax

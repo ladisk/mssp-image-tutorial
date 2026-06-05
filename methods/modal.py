@@ -8,81 +8,85 @@ import numpy as np
 import matplotlib.pyplot as plt
 from methods.utils import load_hdf5
 
-
 # --- FRF estimation ---------------------------------------------------------
 
-def compute_frf(sig_files, idi_files, n_freq, view='view 0'):
+def load_signals(sig_files, force_ch=0, response_ch=1):
     """
-    Ensemble-averaged H₁, H₂, coherence and accelerometer FRF from repeated
-    sine-sweep measurements.
-
-    For each repetition the full-record DFT is computed and the spectral
-    quantities are accumulated; averaging across repetitions yields consistent
-    H₁ and H₂ estimators.  The force spectrum is clipped to *n_freq* bins so
-    that it matches the camera Nyquist frequency.
+    Load force and response signals from a list of HDF5 measurement files.
 
     Parameters
     ----------
     sig_files : list of str
-        Measured-signal HDF5 files (``InputTask`` format: channel 0 = force,
-        channel 1 = accelerometer).
-    idi_files : list of str
-        IDI displacement HDF5 files; each file must contain a dict keyed by
-        view label.
-    n_freq : int
-        Number of positive-frequency bins to retain (clips force/acc spectra to
-        the camera Nyquist).
-    view : str
-        Dict key used to select displacement data from each IDI pickle file.
+        Paths to HDF5 files, each containing an ``InputTask`` dataset with
+        shape ``(n_samples, n_channels)``.
+    force_ch : int
+        Channel index for the force signal (default 0).
+    response_ch : int
+        Channel index for the response signal (default 1).
 
     Returns
     -------
-    H1 : ndarray of shape (n_pts, n_freq, 2)
-        Displacement FRF, minimises output-noise bias.
-    H2 : ndarray of shape (n_pts, n_freq, 2)
-        Displacement FRF, minimises input-noise bias.
-    coherence : ndarray of shape (n_pts, n_freq, 2)
-    H_acc : ndarray of shape (n_freq,)
-        Accelerometer FRF (accelerance).
+    force : ndarray of shape (n_reps, n_samples)
+    response : ndarray of shape (n_reps, n_samples)
     """
-    Sff_list, Sfd_list, Sdd_list, Sdf_list, Sfa_list = [], [], [], [], []
+    data = [load_hdf5(f)['InputTask']['data'] for f in sig_files]
+    force    = np.array([d[:, force_ch]    for d in data])
+    response = np.array([d[:, response_ch] for d in data])
+    return force, response
 
-    for sig_path, idi_path in zip(sig_files, idi_files):
-        sig_data = load_hdf5(sig_path)['InputTask']['data']
-        disp = load_hdf5(idi_path)[view]
+def compute_frf(force, response, fs=1.0):
+    """
+    Ensemble-averaged H₁, H₂ and coherence from one or more measurement repetitions.
 
-        force = sig_data[:, 0]
-        acc   = sig_data[:, 1]
+    Parameters
+    ----------
+    force : ndarray of shape (n_samples,) or (n_reps, n_samples)
+        Input (force) time series, mean-removed before DFT.
+    response : ndarray matching force in shape
+        Output (response) time series, mean-removed before DFT.
+    fs : float
+        Sampling frequency in Hz (default 1.0).
 
-        F = np.fft.rfft(force - force.mean())[:n_freq]                      # (n_freq,)
-        A = np.fft.rfft(acc   - acc.mean())[:n_freq]                        # (n_freq,)
-        D = np.fft.rfft(disp  - disp.mean(axis=1, keepdims=True), axis=1)  # (n_pts, n_freq, 2)
+    Returns
+    -------
+    H1 : ndarray of shape (n_freq,)
+        H₁ estimator — minimises output-noise bias.
+    H2 : ndarray of shape (n_freq,)
+        H₂ estimator — minimises input-noise bias.
+    coherence : ndarray of shape (n_freq,)
+    freq : ndarray of shape (n_freq,)
+        Frequency axis in Hz.
+    """
+    force    = np.atleast_2d(force)    # (n_reps, n_samples)
+    response = np.atleast_2d(response)
 
+    Sff_list, Sfr_list, Srr_list, Srf_list = [], [], [], []
+    for f, r in zip(force, response):
+        F = np.fft.rfft(f - f.mean())
+        R = np.fft.rfft(r - r.mean())
         Sff_list.append(np.abs(F) ** 2)
-        Sfd_list.append(np.conj(F)[np.newaxis, :, np.newaxis] * D)
-        Sdd_list.append(np.abs(D) ** 2)
-        Sdf_list.append(np.conj(D) * F[np.newaxis, :, np.newaxis])
-        Sfa_list.append(np.conj(F) * A)
+        Sfr_list.append(np.conj(F) * R)
+        Srr_list.append(np.abs(R) ** 2)
+        Srf_list.append(np.conj(R) * F)
 
     Sff = np.mean(Sff_list, axis=0)
-    Sfd = np.mean(Sfd_list, axis=0)
-    Sdd = np.mean(Sdd_list, axis=0)
-    Sdf = np.mean(Sdf_list, axis=0)
-    Sfa = np.mean(Sfa_list, axis=0)
+    Sfr = np.mean(Sfr_list, axis=0)
+    Srr = np.mean(Srr_list, axis=0)
+    Srf = np.mean(Srf_list, axis=0)
 
-    H1        = Sfd / Sff[np.newaxis, :, np.newaxis]
-    H2        = Sdd / Sdf
+    H1        = Sfr / Sff
+    H2        = Srr / Srf
     coherence = H1 / H2
-    H_acc     = Sfa / Sff
-
-    return H1, H2, coherence, H_acc
+    freq      = np.fft.rfftfreq(force.shape[1], d=1.0 / fs)
+    return H1, H2, coherence, freq
 
 
 # --- Visualisation ----------------------------------------------------------
 
-def plot_mode_shape(mode_shape, grid_coords, title=None, ax=None, cmap=None, **scatter_kw):
+def plot_mode_shape(mode_shape, grid_coords, title=None, ax=None, cmap=None):
     """
-    Scatter plot of a mode shape amplitude on the 2-D measurement grid.
+    Plot a mode shape amplitude on the 2-D measurement grid using smooth
+    tricontourf interpolation.
 
     Parameters
     ----------
@@ -97,31 +101,31 @@ def plot_mode_shape(mode_shape, grid_coords, title=None, ax=None, cmap=None, **s
     ax : matplotlib Axes, optional
         Axes to plot into; a new figure is created if not given.
     cmap : str, optional
-        Colourmap passed to ``ax.scatter``; defaults to ``'viridis'``.
-    **scatter_kw
-        Passed to ``ax.scatter``.
+        Colourmap; defaults to ``'viridis'``.
 
     Returns
     -------
     ax : Axes
-    sc : PathCollection
-        The scatter artist (use for colourbar).
+    cf : TriContourSet
+        The contour artist (use for colourbar).
     """
+    import matplotlib.tri as mtri
+
     if ax is None:
         _, ax = plt.subplots()
     amplitude = (np.linalg.norm(np.abs(mode_shape), axis=1)
                  if mode_shape.ndim == 2 else np.abs(mode_shape))
-    scatter_kw.setdefault('cmap', cmap or 'viridis')
-    scatter_kw.setdefault('s', 40)
-    sc = ax.scatter(grid_coords[:, 1], grid_coords[:, 0],
-                    c=amplitude, **scatter_kw)
+    cmap = cmap or 'viridis'
+    triang = mtri.Triangulation(grid_coords[:, 1], grid_coords[:, 0])
+    levels = np.linspace(0, amplitude.max() or 1.0, 51)
+    cf = ax.tricontourf(triang, amplitude, levels=levels, cmap=cmap)
     ax.set_aspect('equal')
     ax.invert_yaxis()
     ax.set_xlabel('X [mm]')
     ax.set_ylabel('Y [mm]')
     if title:
         ax.set_title(title)
-    return ax, sc
+    return ax, cf
 
 
 def plot_mac(mac, ax=None, cmap=None):
@@ -141,8 +145,8 @@ def plot_mac(mac, ax=None, cmap=None):
     """
     if ax is None:
         _, ax = plt.subplots()
+    mac = np.abs(mac)
     im = ax.imshow(mac, vmin=0, vmax=1, cmap=cmap or 'viridis')
-    plt.colorbar(im, ax=ax, label='MAC')
     ax.set_xlabel('Mode')
     ax.set_ylabel('Mode')
     ticks = np.arange(mac.shape[0])
