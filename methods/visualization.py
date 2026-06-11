@@ -314,8 +314,11 @@ def plot_ods_frame(ref_3d, ods_3d, phase, scale=1.0, cmap=None,
     ods_xyz = ods_3d[:, [1, 0, 2]]
 
     disp_physical = np.real(ods_xyz * np.exp(1j * phase))
+    direction = np.sign(disp_physical[:, 2])  # Z sign encodes in/out of plane
     pts = ref_xyz + scale * disp_physical
     norms = np.linalg.norm(disp_physical, axis=1)
+    norms *= direction
+
     if vmax is None:
         vmax = np.sqrt((np.abs(ods_xyz) ** 2).sum(axis=1)).max() or 1.0
 
@@ -324,7 +327,7 @@ def plot_ods_frame(ref_3d, ods_3d, phase, scale=1.0, cmap=None,
     surf = cloud.delaunay_2d()
 
     pl = pv.Plotter(off_screen=True, window_size=list(window_size))
-    pl.add_mesh(surf, scalars='disp', cmap=cmap, clim=(0, vmax),
+    pl.add_mesh(surf, scalars='disp', cmap=cmap, clim=(-vmax, vmax),
                 scalar_bar_args={'title': '|disp| [mm]', 'vertical': True},
                 show_scalar_bar=colorbar)
     pl.render()
