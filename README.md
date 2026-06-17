@@ -3,7 +3,7 @@
 **Code repository for the tutorial paper published in *Mechanical Systems and Signal Processing*.**
 
 > D. Gorjup, K. Zaletelj, J. Slavič,
-> *An Open-source Supported Guide to High-speed Camera Based Structural Dynamics Identification*,
+> *An Open-source Supported Tutorial to High-speed Camera Based Structural Dynamics Identification*,
 > Mechanical Systems and Signal Processing, TODO (TODO).
 > DOI: [TODO](https://doi.org/TODO)
 
