@@ -5,6 +5,7 @@ Supporting methods for the MSSP tutorial:
 
 Submodules
 ----------
+data           On-demand download of the measured data from Zenodo.
 utils          Image/video I/O and basic array helpers.
 calibration    Camera calibration and projection matrix construction.
 triangulation  Geometric (DLT) and frequency-domain 3-D reconstruction.
@@ -12,6 +13,6 @@ modal          FRF estimation, modal identification (LSCF/LSFD), and MAC.
 visualization  Plotting helpers used throughout the tutorial notebook.
 """
 
-from methods import utils, calibration, triangulation, modal, visualization
+from methods import data, utils, calibration, triangulation, modal, visualization
 
-__all__ = ["utils", "calibration", "triangulation", "modal", "visualization"]
+__all__ = ["data", "utils", "calibration", "triangulation", "modal", "visualization"]

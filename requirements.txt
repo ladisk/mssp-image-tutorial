@@ -6,6 +6,8 @@ ipykernel
 ipywidgets
 pyqt6
 pyqtgraph
+requests
+tqdm
 
 # Image processing libraries
 opencv-python
