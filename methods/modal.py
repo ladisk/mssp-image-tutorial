@@ -128,13 +128,38 @@ def plot_mode_shape(mode_shape, grid_coords, title=None, ax=None, cmap=None):
     return ax, cf
 
 
+def compute_mac(phi_a, phi_b):
+    """
+    Cross-MAC matrix between two independently obtained mode-shape sets,
+    defined over the same degrees of freedom (e.g. the same measurement points).
+
+    Parameters
+    ----------
+    phi_a : ndarray of shape (n_dof, n_modes_a)
+    phi_b : ndarray of shape (n_dof, n_modes_b)
+        Complex or real mode shape vectors, both over the same ``n_dof``.
+
+    Returns
+    -------
+    mac : ndarray of shape (n_modes_a, n_modes_b)
+    """
+    phi_a = np.asarray(phi_a)
+    phi_b = np.asarray(phi_b)
+    num = np.abs(phi_a.conj().T @ phi_b) ** 2
+    norm_a = np.sum(np.abs(phi_a) ** 2, axis=0)
+    norm_b = np.sum(np.abs(phi_b) ** 2, axis=0)
+    return num / np.outer(norm_a, norm_b)
+
+
 def plot_mac(mac, ax=None, cmap=None):
     """
     Colour-matrix plot of a MAC matrix with annotated values.
 
     Parameters
     ----------
-    mac : ndarray of shape (n_modes, n_modes)
+    mac : ndarray of shape (n_modes_a, n_modes_b)
+        Square for an auto-MAC, rectangular for a cross-MAC (e.g. from
+        ``compute_mac``).
     ax : matplotlib Axes, optional
     cmap : str, optional
         Colourmap; defaults to ``'viridis'``.
@@ -149,9 +174,10 @@ def plot_mac(mac, ax=None, cmap=None):
     im = ax.imshow(mac, vmin=0, vmax=1, cmap=cmap or 'viridis')
     ax.set_xlabel('Mode')
     ax.set_ylabel('Mode')
-    ticks = np.arange(mac.shape[0])
-    ax.set_xticks(ticks); ax.set_xticklabels(ticks + 1)
-    ax.set_yticks(ticks); ax.set_yticklabels(ticks + 1)
+    xticks = np.arange(mac.shape[1])
+    yticks = np.arange(mac.shape[0])
+    ax.set_xticks(xticks); ax.set_xticklabels(xticks + 1)
+    ax.set_yticks(yticks); ax.set_yticklabels(yticks + 1)
     for i in range(mac.shape[0]):
         for j in range(mac.shape[1]):
             ax.text(j, i, f'{mac[i, j]:.2f}', ha='center', va='center',

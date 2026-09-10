@@ -235,8 +235,8 @@ __marimo__/
 output/
 
 # Measured data — fetched from Zenodo on demand, see methods/data.py
-data/mraw/
-data/measured_signals/
-data/calibration/
+data/*/mraw/
+data/*/measured_signals/
+data/*/calibration/
 data/.zenodo/
 *.zip

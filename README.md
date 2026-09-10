@@ -16,6 +16,8 @@ The measured data is published separately as an open dataset on Zenodo:
 
 Python 3.11+ is required.
 
+`requirements.txt` pins the most recent versions the notebook was tested against, purely to ensure repeatability. Newer package versions will likely also work.
+
 ```bash
 # Clone (no Git LFS required)
 git clone git@github.com:domengorjup/mssp-image-tutorial.git
@@ -48,12 +50,18 @@ methods/                              # reusable Python modules
     visualization.py                  # plotting and animation helpers
     utils.py                          # general utilities (I/O, image loading)
 data/
-    results/image_displacements/      # precomputed LK optical-flow displacements (in repository)
     plate_speckle.png                 # speckle pattern image for visualization (in repository)
-    mraw/                             # Photron videos, two views      ─┐
-    measured_signals/                 # force and acceleration signals  │ downloaded
-    calibration/                      # checkerboard calibration images │ from Zenodo
-    .zenodo/                          # download markers (do not edit) ─┘
+    plate_sweep/                      # sine-sweep record — EMA (FRF, hybrid method, MAC)
+        results/image_displacements/  # precomputed LK optical-flow displacements (in repository)
+        mraw/                         # Photron videos, two views      ─┐
+        measured_signals/             # force and acceleration signals  │ downloaded
+        calibration/                  # checkerboard calibration images │ from Zenodo
+    plate_random/                     # broadband-random record — OMA
+        results/image_displacements/  # precomputed LK optical-flow displacements (in repository)
+        mraw/                         # Photron videos, two views      ─┐
+        measured_signals/             # force and acceleration signals  │ downloaded
+        calibration/                  # checkerboard calibration images │ from Zenodo
+    .zenodo/                          # download markers (do not edit)
 ```
 
 ---
@@ -66,11 +74,15 @@ demand. The repository pins the **version DOI**
 DOI, so that every reader obtains byte-identical files and reproduces the exact
 results reported in the paper.
 
+Each archive contains both the sweep and broadband-random records, nested under
+`plate_sweep/` and `plate_random/` respectively (e.g. `mraw.zip` extracts to
+`data/plate_sweep/mraw/` **and** `data/plate_random/mraw/`).
+
 | Archive | Size | MD5 | Extracts to |
 |---------|------|-----|-------------|
-| `mraw.zip` | 442.7 MB | `c1e3fd2e2aa1b59ea686f136411e2041` | `data/mraw/` |
-| `measured_signals.zip` | 9.3 MB | `bb93d8be17476b1ea13d8f148cde9fb9` | `data/measured_signals/` |
-| `calibration.zip` | 1.9 MB | `f10eb0d63ce2a919cdd53100c3ed3fe3` | `data/calibration/` |
+| `mraw.zip` | TODO | TODO | `data/{plate_sweep,plate_random}/mraw/` |
+| `measured_signals.zip` | TODO | TODO | `data/{plate_sweep,plate_random}/measured_signals/` |
+| `calibration.zip` | TODO | TODO | `data/{plate_sweep,plate_random}/calibration/` |
 
 The notebook calls `ensure_dataset()` in section 2.1, before the data is first
 used. It can also be called directly:
@@ -97,13 +109,30 @@ marker behind, so the next call simply fetches the dataset again.
 
 ## Measurement
 
-The example printer-bed dataset consists of a sine-sweep excitation experiment on a suspended thin plate (3D-printer bed) with a speckle pattern, recorded sequentially from **two camera views**.
+The printer-bed dataset consists of two experiments on the same suspended thin plate
+(3D-printer bed) with a speckle pattern, each recorded sequentially from **two camera
+views**.
+
+**`plate_sweep`** — swept-sine excitation, used throughout Sec.~5.1–5.3 (FRFs, the
+hybrid EMA method, MAC validation):
 
 - **Excitation:** swept-sine, 60–500 Hz
 - **Views:** 2 (multi-view for 3-D displacement reconstruction using frequency-domain triangulation)
 - **Repetitions:** 4 (view 0) / 1 (view 1) — used for ensemble-averaged FRF estimation
-- **Camera:** Photron high-speed, downsampled to 384×384 px at 1000 fps for the provided example data
-- **Force and acceleration** sampled at 25600 Hz (DAQ), clipped to camera Nyquist (500 Hz) during analysis
+- **Camera:** Photron high-speed, 768×768 px at 5000 fps, 10000 frames (2 s)
+- **Force and acceleration** sampled at 25600 Hz (DAQ)
+
+**`plate_random`** — broadband random excitation, used for the OMA section (Sec.~5.4);
+a sine sweep does not satisfy the (quasi-)stationarity assumption underlying
+output-only identification, so this record was captured separately:
+
+- **Excitation:** broadband random
+- **Views:** 2 (independent camera setups; used as an OMA repeatability cross-check, not for triangulation)
+- **Camera:** Photron high-speed, 768×768 px at 5000 fps, 10000 frames (2 s)
+- **Force and acceleration** sampled at 25600 Hz (DAQ)
+
+Pole identification in the notebook is restricted to the 60–500 Hz band of interest
+(both datasets, both excitation types).
 
 ---
 
@@ -111,7 +140,7 @@ The example printer-bed dataset consists of a sine-sweep excitation experiment o
 
 All precomputed data is stored in [HDF5](https://www.hdfgroup.org/solutions/hdf5/) format, readable without any proprietary software. Load with `methods.utils.load_hdf5` or directly with `h5py`.
 
-### `data/measured_signals/view_0[_02|_03|_04].hdf5` *(downloaded from Zenodo)*
+### `data/plate_sweep/measured_signals/view_0[_02|_03|_04].hdf5` *(downloaded from Zenodo)*
 
 Force and acceleration time series for the 4 view-0 repetitions.
 
@@ -123,19 +152,34 @@ InputTask/
     sample_rate   int                  25600 [Hz]
 ```
 
-### `data/measured_signals/view_1.hdf5` *(downloaded from Zenodo)*
+### `data/plate_sweep/measured_signals/view_1.hdf5` *(downloaded from Zenodo)*
 
 Same structure, single repetition for view 1.
 
-### `data/results/image_displacements/idi_lk_displacements[_02|_03|_04].hdf5` *(in repository)*
+### `data/plate_sweep/results/image_displacements/idi_lk_displacements[_02|_03|_04].hdf5` *(in repository)*
 
 Lucas–Kanade optical-flow displacements for each measurement repetition. These are
 derived results, computed from the videos by the notebook, and are included in the
 repository so that the modal analysis can be run without repeating the tracking.
 
 ```
-view 0    float64 (100, 2000, 2)   displacements [px] — axes: (point, frame, [v, u])
-view 1    float64 (100, 2000, 2)
+view 0    float64 (100, 10000, 2)   displacements [px] — axes: (point, frame, [v, u])
+view 1    float64 (100, 10000, 2)
+```
+
+### `data/plate_random/measured_signals/view_0_01.hdf5`, `view_1_01.hdf5` *(downloaded from Zenodo)*
+
+Force and acceleration time series for the broadband random test, one file per view
+(same `InputTask` structure as `plate_sweep`, `data` shape `(51200, 3)`).
+
+### `data/plate_random/results/image_displacements/idi_lk_displacements.hdf5` *(in repository)*
+
+Lucas–Kanade optical-flow displacements for the broadband random test, both views,
+computed on the coarser 5×5 point grid used for the OMA analysis.
+
+```
+view 0    float64 (25, 10000, 2)   displacements [px] — axes: (point, frame, [v, u])
+view 1    float64 (25, 10000, 2)
 ```
 
 ---

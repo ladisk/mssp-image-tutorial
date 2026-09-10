@@ -62,8 +62,10 @@ def calibrate_camera(image_files, pattern_size, block_size):
         found, corners = cv2.findChessboardCorners(image, pattern_size, None, 
                             cv2.CALIB_CB_ADAPTIVE_THRESH + cv2.CALIB_CB_NORMALIZE_IMAGE)
         if found:
-            refined_corners = cv2.cornerSubPix(image, corners, (5, 5), (-1, -1), criteria)
-            if refined_corners[0, 0, 1] > refined_corners[-1, 0, 1]:
+            # cv2.cornerSubPix returns (N, 1, 2) on some OpenCV builds and (N, 2) on others;
+            # normalise so the indexing below and calibrateCameraExtended both get a fixed shape.
+            refined_corners = cv2.cornerSubPix(image, corners, (5, 5), (-1, -1), criteria).reshape(-1, 2)
+            if refined_corners[0, 1] > refined_corners[-1, 1]:
                 refined_corners = refined_corners[::-1]
             image_points.append(refined_corners)
             object_points.append(object_p)
@@ -343,7 +345,7 @@ def plot_calibration_images(K, calib, n_images=5, show_axes=True, show_errors=Fa
         ax.imshow(image, cmap='gray', vmin=0, vmax=255, interpolation='antialiased')
         ax.set_axis_off()
 
-        pts = corners[:, 0, :]
+        pts = corners.reshape(-1, 2)
         ax.scatter(pts[:, 0], pts[:, 1], s=7, c='cyan', marker='s', linewidths=0, zorder=3)
 
         if show_axes:

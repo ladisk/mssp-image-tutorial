@@ -1,19 +1,21 @@
 # General Python libraries
-numpy
-h5py
-matplotlib
-ipykernel
-ipywidgets
-pyqt6
-pyqtgraph
-requests
-tqdm
+numpy==2.5.3
+h5py==3.16.0
+matplotlib==3.11.1
+ipykernel==7.3.0
+ipywidgets==8.1.9
+pyqt6==6.11.0
+pyqtgraph==0.14.0
+requests==2.34.2
+tqdm==4.70.0
+tabulate==0.10.0
 
 # Image processing libraries
-opencv-python
+opencv-python==5.0.0.93
 
 # Specific libraries for this tutorial
-pyMRAW
-pyidi
-napari
-sdypy
+pyMRAW==0.33.0
+pyidi==1.4.0
+napari==0.6.5
+sdypy==0.5.1
+pyOMA-2[plot]==1.4.2
