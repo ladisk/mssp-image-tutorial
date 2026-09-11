@@ -128,6 +128,95 @@ def plot_mode_shape(mode_shape, grid_coords, title=None, ax=None, cmap=None):
     return ax, cf
 
 
+def unstack_shape(phi, mode=0):
+    """
+    Split one mode of a direction-stacked mode-shape matrix into per-point components.
+
+    Parameters
+    ----------
+    phi : ndarray of shape (2*n_pts, n_modes)
+        Mode shapes with the two measured image directions stacked vertically:
+        first ``n_pts`` rows the v-direction, last ``n_pts`` rows the u-direction.
+    mode : int, optional
+        Column (mode) index.
+
+    Returns
+    -------
+    ndarray of shape (n_pts, 2)
+        Ready for ``plot_mode_shape``.
+    """
+    n_pts = phi.shape[0] // 2
+    return np.stack([phi[:n_pts, mode], phi[n_pts:, mode]], axis=1)
+
+
+def plot_mode_shapes(shapes, grid_coords, titles=None, cmap=None,
+                     colorbar_label=None, panel_size=(3.5, 3)):
+    """
+    Plot several mode shapes side by side on the measurement grid.
+
+    Parameters
+    ----------
+    shapes : sequence of ndarray, each of shape (n_pts, 2)
+        Mode shapes to plot, e.g. from ``unstack_shape``.
+    grid_coords : ndarray of shape (n_pts, 3)
+        World-frame grid coordinates, as for ``plot_mode_shape``.
+    titles : sequence of str, optional
+        Per-panel titles.
+    cmap : str, optional
+    colorbar_label : str, optional
+        If given, a colourbar with this label is added to each panel.
+    panel_size : tuple, optional
+        Size of a single panel in inches.
+
+    Returns
+    -------
+    fig : Figure
+    axes : ndarray of Axes
+    """
+    n = len(shapes)
+    fig, axes = plt.subplots(1, n, figsize=(panel_size[0] * n, panel_size[1]))
+    axes = np.atleast_1d(axes)
+    for ax, shape, title in zip(axes, shapes, titles if titles is not None else [None] * n):
+        _, cf = plot_mode_shape(shape, grid_coords, ax=ax, title=title, cmap=cmap)
+        if colorbar_label is not None:
+            fig.colorbar(cf, ax=ax, label=colorbar_label)
+    return fig, axes
+
+
+def print_comparison_table(rows, headers, floatfmt, colalign=None, missing='--'):
+    """
+    Print a modal-parameter comparison table.
+
+    Every value is formatted to a string before tabulate sees it: tabulate
+    silently ignores ``floatfmt`` for a whole column as soon as that column
+    holds one non-numeric value (a missing-value placeholder, for instance),
+    so numeric re-parsing is disabled here as well.
+
+    Parameters
+    ----------
+    rows : sequence of sequences
+        Table values; ``None`` marks a value that is not available.
+    headers : sequence of str
+    floatfmt : sequence of str
+        Per-column format spec (e.g. ``'.2f'``); an empty spec leaves the
+        value unformatted.
+    colalign : sequence of str, optional
+        Per-column alignment, passed to tabulate.
+    missing : str, optional
+        Placeholder printed for ``None`` values.
+    """
+    from tabulate import tabulate
+
+    formatted = [
+        [missing if value is None
+         else format(value, fmt) if fmt and not isinstance(value, str)
+         else str(value)
+         for value, fmt in zip(row, floatfmt)]
+        for row in rows
+    ]
+    print(tabulate(formatted, headers=headers, colalign=colalign, disable_numparse=True))
+
+
 def compute_mac(phi_a, phi_b):
     """
     Cross-MAC matrix between two independently obtained mode-shape sets,

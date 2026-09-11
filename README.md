@@ -1,9 +1,9 @@
-# An Open-source Supported Guide to High-speed Camera Based Structural Dynamics Identification
+# High-Speed-Camera-Based Structural Dynamics Identification: An Open-Source-Supported Tutorial
 
 **Code repository for the tutorial paper published in *Mechanical Systems and Signal Processing*.**
 
 > D. Gorjup, K. Zaletelj, J. Slavič,
-> *An Open-source Supported Tutorial to High-speed Camera Based Structural Dynamics Identification*,
+> *High-Speed-Camera-Based Structural Dynamics Identification: An Open-Source-Supported Tutorial*,
 > Mechanical Systems and Signal Processing, TODO (TODO).
 > DOI: [TODO](https://doi.org/TODO)
 
@@ -34,7 +34,7 @@ jupyter notebook image_based_dynamics_tutorial.ipynb
 ```
 
 The measured data is **not** part of the repository — it is downloaded from Zenodo
-by the notebook itself, in section 2.1. See [Measured data](#measured-data) below.
+by the notebook itself, at the start of section 2. See [Measured data](#measured-data) below.
 
 ---
 
@@ -84,13 +84,13 @@ Each archive contains both the sweep and broadband-random records, nested under
 | `measured_signals.zip` | TODO | TODO | `data/{plate_sweep,plate_random}/measured_signals/` |
 | `calibration.zip` | TODO | TODO | `data/{plate_sweep,plate_random}/calibration/` |
 
-The notebook calls `ensure_dataset()` in section 2.1, before the data is first
-used. It can also be called directly:
+The notebook calls `ensure_dataset()` at the start of section 2, before the data is
+first used. It can also be called directly:
 
 ```python
 from methods.data import ensure_dataset
 
-ensure_dataset()                     # all archives (~450 MB on first run)
+ensure_dataset()                     # all archives (~20 GB on first run)
 ensure_dataset('calibration')        # a single archive
 ```
 
@@ -191,7 +191,7 @@ Please cite both the paper and the dataset.
 ```bibtex
 @article{gorjup2026tutorial,
   author  = {Gorjup, Domen and Zaletelj, Klemen and Slavi\v{c}, Janko},
-  title   = {An Open-source Supported Guide to High-speed Camera Based Structural Dynamics Identification},
+  title   = {High-Speed-Camera-Based Structural Dynamics Identification: An Open-Source-Supported Tutorial},
   journal = {Mechanical Systems and Signal Processing},
   year    = {TODO},
   volume  = {TODO},
