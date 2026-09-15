@@ -1,0 +1,53 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite the paper (preferred-citation) and the dataset (references)."
+type: software
+title: "High-Speed-Camera-Based Structural Dynamics Identification: An Open-Source-Supported Tutorial (code repository)"
+authors:
+  - family-names: Gorjup
+    given-names: Domen
+    affiliation: University of Ljubljana, Faculty of Mechanical Engineering
+    email: domen.gorjup@fs.uni-lj.si
+  - family-names: Zaletelj
+    given-names: Klemen
+    affiliation: University of Ljubljana, Faculty of Mechanical Engineering
+  - family-names: Slavič
+    given-names: Janko
+    affiliation: University of Ljubljana, Faculty of Mechanical Engineering
+    email: janko.slavic@fs.uni-lj.si
+license: MIT
+repository-code: https://github.com/ladisk/mssp-image-tutorial
+keywords:
+  - high-speed camera
+  - structural dynamics
+  - optical flow
+  - digital image correlation
+  - modal analysis
+  - frequency response function
+  - 3D reconstruction
+  - open-source
+# TODO once the paper is published: add doi, year, volume, issue and pages below.
+preferred-citation:
+  type: article
+  title: "High-Speed-Camera-Based Structural Dynamics Identification: An Open-Source-Supported Tutorial"
+  journal: Mechanical Systems and Signal Processing
+  authors:
+    - family-names: Gorjup
+      given-names: Domen
+    - family-names: Zaletelj
+      given-names: Klemen
+    - family-names: Slavič
+      given-names: Janko
+references:
+  - type: data
+    title: "Printer-bed dataset: high-speed-camera and accelerometer modal measurements of a suspended 3D-printer bed"
+    authors:
+      - family-names: Gorjup
+        given-names: Domen
+      - family-names: Zaletelj
+        given-names: Klemen
+      - family-names: Slavič
+        given-names: Janko
+    year: 2026
+    publisher:
+      name: Zenodo
+    doi: 10.5281/zenodo.22770610

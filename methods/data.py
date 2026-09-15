@@ -19,8 +19,8 @@ from tqdm.auto import tqdm
 # that the reader reproduces the exact results reported in the paper, which
 # requires byte-identical input files. Do not replace it with the concept DOI
 # (10.5281/zenodo.21476608), which always resolves to the latest version.
-RECORD_ID = '21476609'
-DOI = '10.5281/zenodo.21476609'
+RECORD_ID = '22770610'
+DOI = '10.5281/zenodo.22770610'
 RECORD_URL = f'https://zenodo.org/records/{RECORD_ID}'
 API_URL = f'https://zenodo.org/api/records/{RECORD_ID}'
 

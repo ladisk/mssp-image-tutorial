@@ -8,33 +8,31 @@
 > DOI: [TODO](https://doi.org/TODO)
 
 The measured data is published separately as an open dataset on Zenodo:
-[10.5281/zenodo.21476609](https://doi.org/10.5281/zenodo.21476609) (CC BY 4.0).
+[10.5281/zenodo.22770610](https://doi.org/10.5281/zenodo.22770610) (CC BY 4.0).
 
 ---
 
 ## Setup
 
-Python 3.11+ is required.
-
-`requirements.txt` pins the most recent versions the notebook was tested against, purely to ensure repeatability. Newer package versions will likely also work.
+Python 3.11+ is required. `requirements.txt` pins the versions the notebook was tested
+against; newer versions will likely also work.
 
 ```bash
-# Clone (no Git LFS required)
-git clone git@github.com:domengorjup/mssp-image-tutorial.git
+git clone git@github.com:ladisk/mssp-image-tutorial.git
 cd mssp-image-tutorial
 
-# Create virtual environment and install dependencies
 python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-
-# Register the kernel and launch the notebook
 python -m ipykernel install --user --name=mssp-tutorial
-jupyter notebook image_based_dynamics_tutorial.ipynb
 ```
 
-The measured data is **not** part of the repository — it is downloaded from Zenodo
-by the notebook itself, at the start of section 2. See [Measured data](#measured-data) below.
+Open `image_based_dynamics_tutorial.ipynb` in JupyterLab or VS Code with the `mssp-tutorial` kernel. 
+
+The notebook follows the paper section by section; the paper carries the methods and their parameters.
+
+The measured data (~20 GB) is **not** part of the repository. The notebook downloads it
+from Zenodo at the start of section 2, see [Measured data](#measured-data).
 
 ---
 
@@ -68,24 +66,22 @@ data/
 
 ## Measured data
 
-All measurements are published as a citable Zenodo **printer-bed dataset** and downloaded on
-demand. The repository pins the **version DOI**
-[10.5281/zenodo.21476609](https://doi.org/10.5281/zenodo.21476609), not the concept
-DOI, so that every reader obtains byte-identical files and reproduces the exact
-results reported in the paper.
+All measurements are published as the citable Zenodo **printer-bed dataset**. The
+repository pins the **version DOI** 
+[10.5281/zenodo.22770610](https://doi.org/10.5281/zenodo.22770610), so that every 
+reader obtains byte-identical files and reproduces the results reported in the paper.
 
-Each archive contains both the sweep and broadband-random records, nested under
-`plate_sweep/` and `plate_random/` respectively (e.g. `mraw.zip` extracts to
-`data/plate_sweep/mraw/` **and** `data/plate_random/mraw/`).
+Each archive extracts into `data/` and contains both records, nested under `plate_sweep/`
+and `plate_random/`:
 
 | Archive | Size | MD5 | Extracts to |
 |---------|------|-----|-------------|
-| `mraw.zip` | TODO | TODO | `data/{plate_sweep,plate_random}/mraw/` |
-| `measured_signals.zip` | TODO | TODO | `data/{plate_sweep,plate_random}/measured_signals/` |
-| `calibration.zip` | TODO | TODO | `data/{plate_sweep,plate_random}/calibration/` |
+| `mraw.zip` | 17.9 GB | `2f8c0bd2b6a7bfa8221a173b5979462f` | `data/{plate_sweep,plate_random}/mraw/` |
+| `measured_signals.zip` | 6.6 MB | `ff14891f76dfb49150e7775a71f462fe` | `data/{plate_sweep,plate_random}/measured_signals/` |
+| `calibration.zip` | 2.4 MB | `a8277ac4dcb82d5945b9565435872754` | `data/{plate_sweep,plate_random}/calibration/` |
 
-The notebook calls `ensure_dataset()` at the start of section 2, before the data is
-first used. It can also be called directly:
+`ensure_dataset()` in `methods/data.py` downloads, verifies and extracts the archives. The
+notebook calls it at the start of section 2; it can also be called directly:
 
 ```python
 from methods.data import ensure_dataset
@@ -94,55 +90,40 @@ ensure_dataset()                     # all archives (~20 GB on first run)
 ensure_dataset('calibration')        # a single archive
 ```
 
-The function is safe to re-run. Data already in place is detected via marker files
-in `data/.zenodo/` and skipped without any network access, so re-running a notebook
-cell costs nothing. Each archive is verified against the MD5 checksum published in
-the Zenodo record before extraction; a mismatch raises an error rather than
-proceeding with corrupt data. An interrupted download or extraction leaves no
-marker behind, so the next call simply fetches the dataset again.
+It is safe to re-run: data already in place is detected via marker files in
+`data/.zenodo/` and skipped. Every archive is checked against the MD5 checksum published
+in the Zenodo record; a mismatch raises an error.
 
-> **Slow or unreliable connection?** Download any of the archives manually from the
-> [record page](https://zenodo.org/records/21476609) and place them in `data/`.
-> `ensure_dataset()` verifies their checksums, extracts them, and skips the download.
+> **Slow or unreliable connection?** Download the archives manually from the
+> [record page](https://zenodo.org/records/22770610) and place them in `data/`.
+> `ensure_dataset()` verifies and extracts them, and skips the download.
 
 ---
 
 ## Measurement
 
-The printer-bed dataset consists of two experiments on the same suspended thin plate
-(3D-printer bed) with a speckle pattern, each recorded sequentially from **two camera
-views**.
+Two experiments on the same suspended thin plate (3D-printer bed) with a speckle pattern,
+each recorded sequentially from **two camera views** (Photron FASTCAM SA-Z, 768×768 px,
+8-bit, 5000 fps, 10 000 frames = 2 s). 
 
-**`plate_sweep`** — swept-sine excitation, used throughout Sec.~5.1–5.3 (FRFs, the
-hybrid EMA method, MAC validation):
+Excitation force and reference acceleration are sampled at 25 600 Hz, hardware-synchronised with the camera.
 
-- **Excitation:** swept-sine, 60–500 Hz
-- **Views:** 2 (multi-view for 3-D displacement reconstruction using frequency-domain triangulation)
-- **Repetitions:** 4 (view 0) / 1 (view 1) — used for ensemble-averaged FRF estimation
-- **Camera:** Photron high-speed, 768×768 px at 5000 fps, 10000 frames (2 s)
-- **Force and acceleration** sampled at 25600 Hz (DAQ)
-
-**`plate_random`** — broadband random excitation, used for the OMA section (Sec.~5.4);
-a sine sweep does not satisfy the (quasi-)stationarity assumption underlying
-output-only identification, so this record was captured separately:
-
-- **Excitation:** broadband random
-- **Views:** 2 (independent camera setups; used as an OMA repeatability cross-check, not for triangulation)
-- **Camera:** Photron high-speed, 768×768 px at 5000 fps, 10000 frames (2 s)
-- **Force and acceleration** sampled at 25600 Hz (DAQ)
-
-Pole identification in the notebook is restricted to the 60–500 Hz band of interest
-(both datasets, both excitation types).
+| Record | Excitation | Camera views | Repetitions | Used in |
+|--------|-----------|--------------|-------------|---------|
+| `plate_sweep` | swept sine, 60–500 Hz | 2, triangulated into 3-D displacements | 4 (view 0), 1 (view 1) | Sec. 5.1–5.3: FRFs, hybrid EMA, MAC |
+| `plate_random` | broadband random, 60–500 Hz | 2, independent (OMA repeatability check) | 1 per view | Sec. 5.4: OMA |
 
 ---
 
 ## Provided data (HDF5)
 
-All precomputed data is stored in [HDF5](https://www.hdfgroup.org/solutions/hdf5/) format, readable without any proprietary software. Load with `methods.utils.load_hdf5` or directly with `h5py`.
+All data is stored in [HDF5](https://www.hdfgroup.org/solutions/hdf5/), readable with
+`methods.utils.load_hdf5` or directly with `h5py`.
 
-### `data/plate_sweep/measured_signals/view_0[_02|_03|_04].hdf5` *(downloaded from Zenodo)*
-
-Force and acceleration time series for the 4 view-0 repetitions.
+**Measured signals**: `data/<record>/measured_signals/*.hdf5`, downloaded from Zenodo.
+Force and acceleration time series, one file per view and repetition:
+* `plate_sweep`: `view_0.hdf5`, `view_0_02.hdf5`, `view_0_03.hdf5`, `view_0_04.hdf5`, `view_1.hdf5`;
+* `plate_random`: `view_0_01.hdf5`, `view_1_01.hdf5`.
 
 ```
 InputTask/
@@ -152,34 +133,17 @@ InputTask/
     sample_rate   int                  25600 [Hz]
 ```
 
-### `data/plate_sweep/measured_signals/view_1.hdf5` *(downloaded from Zenodo)*
+**Image displacements**: `data/<record>/results/image_displacements/*.hdf5`, in the
+repository. Lucas–Kanade optical-flow displacements, computed from the videos by the
+notebook and included so that the modal analysis can be run without repeating the tracking. 
 
-Same structure, single repetition for view 1.
-
-### `data/plate_sweep/results/image_displacements/idi_lk_displacements[_02|_03|_04].hdf5` *(in repository)*
-
-Lucas–Kanade optical-flow displacements for each measurement repetition. These are
-derived results, computed from the videos by the notebook, and are included in the
-repository so that the modal analysis can be run without repeating the tracking.
+* `plate_sweep`: one file per repetition (`idi_lk_displacements.hdf5`, `_02`,
+`_03`, `_04`) on the 100-point grid; 
+* `plate_random`: `idi_lk_displacements.hdf5` on the coarser 5×5 grid used for OMA.
 
 ```
-view 0    float64 (100, 10000, 2)   displacements [px] — axes: (point, frame, [v, u])
-view 1    float64 (100, 10000, 2)
-```
-
-### `data/plate_random/measured_signals/view_0_01.hdf5`, `view_1_01.hdf5` *(downloaded from Zenodo)*
-
-Force and acceleration time series for the broadband random test, one file per view
-(same `InputTask` structure as `plate_sweep`, `data` shape `(51200, 3)`).
-
-### `data/plate_random/results/image_displacements/idi_lk_displacements.hdf5` *(in repository)*
-
-Lucas–Kanade optical-flow displacements for the broadband random test, both views,
-computed on the coarser 5×5 point grid used for the OMA analysis.
-
-```
-view 0    float64 (25, 10000, 2)   displacements [px] — axes: (point, frame, [v, u])
-view 1    float64 (25, 10000, 2)
+view 0    float64 (n_points, 10000, 2)   displacements [px]; axes: (point, frame, [v, u])
+view 1    float64 (n_points, 10000, 2)   n_points = 100 (plate_sweep), 25 (plate_random)
 ```
 
 ---
@@ -205,13 +169,13 @@ Please cite both the paper and the dataset.
                measurements of a suspended 3D-printer bed},
   year      = {2026},
   publisher = {Zenodo},
-  doi       = {10.5281/zenodo.21476609},
-  url       = {https://doi.org/10.5281/zenodo.21476609},
+  doi       = {10.5281/zenodo.22770610},
+  url       = {https://doi.org/10.5281/zenodo.22770610},
 }
 ```
 
 ## Authors
 
-- Domen Gorjup — University of Ljubljana, Faculty of Mechanical Engineering
-- Klemen Zaletelj — University of Ljubljana, Faculty of Mechanical Engineering
-- Janko Slavič — University of Ljubljana, Faculty of Mechanical Engineering
+- Domen Gorjup, University of Ljubljana, Faculty of Mechanical Engineering
+- Klemen Zaletelj, University of Ljubljana, Faculty of Mechanical Engineering
+- Janko Slavič, University of Ljubljana, Faculty of Mechanical Engineering
