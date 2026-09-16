@@ -24,8 +24,10 @@ DOI = '10.5281/zenodo.22770610'
 RECORD_URL = f'https://zenodo.org/records/{RECORD_ID}'
 API_URL = f'https://zenodo.org/api/records/{RECORD_ID}'
 
-# Archives in the record. Each one extracts to a directory of the same name.
-DATASETS = ('mraw', 'measured_signals', 'calibration')
+# Archives in the record. Each one extracts into `data/`, with the record
+# directories (plate_sweep/, plate_random/) inside. The raw video is split per
+# record, so the sweep-only sections can be run without the broadband videos.
+DATASETS = ('mraw_plate_sweep', 'mraw_plate_random', 'measured_signals', 'calibration')
 
 DATA_DIR = Path(__file__).resolve().parent.parent / 'data'
 MARKER_DIR = DATA_DIR / '.zenodo'

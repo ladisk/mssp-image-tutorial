@@ -71,12 +71,13 @@ repository pins the **version DOI**
 [10.5281/zenodo.22770610](https://doi.org/10.5281/zenodo.22770610), so that every 
 reader obtains byte-identical files and reproduces the results reported in the paper.
 
-Each archive extracts into `data/` and contains both records, nested under `plate_sweep/`
-and `plate_random/`:
+Each archive extracts into `data/`, with the record directories inside. The raw video is
+split per record, so the sweep-only sections can be run without the broadband videos:
 
 | Archive | Size | MD5 | Extracts to |
 |---------|------|-----|-------------|
-| `mraw.zip` | 17.9 GB | `2f8c0bd2b6a7bfa8221a173b5979462f` | `data/{plate_sweep,plate_random}/mraw/` |
+| `mraw_plate_sweep.zip` | 8.5 GB | `4bfdf017ef1ceff24e5d18d6709a6c22` | `data/plate_sweep/mraw/` |
+| `mraw_plate_random.zip` | 9.3 GB | `092f9fd3462f7eb296482201f8a41e78` | `data/plate_random/mraw/` |
 | `measured_signals.zip` | 6.6 MB | `ff14891f76dfb49150e7775a71f462fe` | `data/{plate_sweep,plate_random}/measured_signals/` |
 | `calibration.zip` | 2.4 MB | `a8277ac4dcb82d5945b9565435872754` | `data/{plate_sweep,plate_random}/calibration/` |
 

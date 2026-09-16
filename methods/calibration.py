@@ -361,7 +361,7 @@ def plot_calibration_images(K, calib, n_images=5, show_axes=True, show_errors=Fa
                     zorder=4)
                 
         if show_errors:
-            ax.text(5, 50, f'$\\bar{{\epsilon}}$: {errors[i]:.2f} px', color='cyan', fontsize=9,
+            ax.text(5, 50, f'$\\bar{{\\epsilon}}$: {errors[i]:.2f} px', color='cyan', fontsize=9,
                     bbox=dict(facecolor='black', alpha=0.5, pad=1), zorder=5)
 
     fig.tight_layout(pad=0.1, w_pad=0.2)
